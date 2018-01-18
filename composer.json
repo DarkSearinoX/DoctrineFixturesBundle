@@ -1,7 +1,7 @@
 {
-    "name": "doctrine/doctrine-fixtures-bundle",
+    "name": "rockadev/doctrine-fixtures-bundle",
     "type": "symfony-bundle",
-    "description": "Symfony DoctrineFixturesBundle",
+    "description": "Fork for Symfony DoctrineFixturesBundle",
     "keywords": ["Persistence", "Fixture"],
     "homepage": "http://www.doctrine-project.org",
     "license": "MIT",
