@@ -4,6 +4,7 @@
 namespace Doctrine\Bundle\FixturesBundle\Command;
 
 use Doctrine\Bundle\DoctrineBundle\Command\DoctrineCommand;
+use Doctrine\Bundle\FixturesBundle\Interfaces\OrderedFixtureInterface;
 use Doctrine\Bundle\FixturesBundle\Loader\SymfonyFixturesLoader;
 use Doctrine\Common\DataFixtures\Executor\ORMExecutor;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
@@ -40,6 +41,7 @@ class LoadDataFixturesDoctrineCommand extends DoctrineCommand
             ->addOption('append', null, InputOption::VALUE_NONE, 'Append the data fixtures instead of deleting all data from the database first.')
             ->addOption('em', null, InputOption::VALUE_REQUIRED, 'The entity manager to use for this command.')
             ->addOption('shard', null, InputOption::VALUE_REQUIRED, 'The shard connection to use for this command.')
+            ->addOption('fixtures', null, InputOption::VALUE_REQUIRED, 'Loads from dir.')
             ->addOption('purge-with-truncate', null, InputOption::VALUE_NONE, 'Purge data by using a database-level TRUNCATE statement')
             ->setHelp(<<<EOT
 The <info>%command.name%</info> command loads data fixtures from your application:
@@ -84,11 +86,22 @@ EOT
             $em->getConnection()->connect($input->getOption('shard'));
         }
 
-        $fixtures = $this->fixturesLoader->getFixtures();
-        if (!$fixtures) {
-            $ui->error('Could not find any fixture services to load.');
+        if($input->getOption('fixtures')){
+            $fixtures = $this->fixturesLoader->loadFromDirectory($input->getOption('fixtures'));
+            if (!$fixtures) {
+                throw new InvalidArgumentException(
+                    'Could not find any fixture services to load.'
+                );
+            }
 
-            return 1;
+            $fixtures = $this->orderFixturesByNumber($fixtures);
+        }else{
+            $fixtures = $this->fixturesLoader->getFixtures();
+            if (!$fixtures) {
+                throw new InvalidArgumentException(
+                    'Could not find any fixture services to load.'
+                );
+            }
         }
         $purger = new ORMPurger($em);
         $purger->setPurgeMode($input->getOption('purge-with-truncate') ? ORMPurger::PURGE_MODE_TRUNCATE : ORMPurger::PURGE_MODE_DELETE);
@@ -98,4 +111,30 @@ EOT
         });
         $executor->execute($fixtures, $input->getOption('append'));
     }
+
+    /**
+     * Orders fixtures by number
+     *
+     * @return array
+     */
+    private function orderFixturesByNumber($fixtures)
+    {
+        $orderedFixtures = $fixtures;
+        usort($orderedFixtures, function($a, $b) {
+            if ($a instanceof OrderedFixtureInterface && $b instanceof OrderedFixtureInterface) {
+                if ($a->getOrder() === $b->getOrder()) {
+                    return 0;
+                }
+                return $a->getOrder() < $b->getOrder() ? -1 : 1;
+            } elseif ($a instanceof OrderedFixtureInterface) {
+                return $a->getOrder() === 0 ? 0 : 1;
+            } elseif ($b instanceof OrderedFixtureInterface) {
+                return $b->getOrder() === 0 ? 0 : -1;
+            }
+            return 0;
+        });
+
+        return $orderedFixtures;
+    }
 }
+
