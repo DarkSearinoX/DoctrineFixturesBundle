@@ -134,7 +134,7 @@ EOT
             return 0;
         });
 
-        return $orderedFixtures;
+        return $orderedFixtures; 
     }
 }
 
