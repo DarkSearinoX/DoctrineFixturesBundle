@@ -121,7 +121,7 @@ EOT
     {
         $orderedFixtures = $fixtures;
         usort($orderedFixtures, function($a, $b) {
-            if ($a instanceof OrderedFixtureInterface && $b instanceof OrderedFixtureInterface) {
+            if ($a instanceof \Doctrine\Common\DataFixtures\OrderedFixtureInterface && $b instanceof \Doctrine\Common\DataFixtures\OrderedFixtureInterface) {
                 if ($a->getOrder() === $b->getOrder()) {
                     return 0;
                 }
@@ -134,7 +134,7 @@ EOT
             return 0;
         });
 
-        return $orderedFixtures; 
+        return $orderedFixtures;
     }
 }
 
